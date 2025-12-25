@@ -4,7 +4,7 @@
  * Manages positions across multiple exchanges with unified monitoring
  */
 
-import { exchangeManager, ExchangeType } from '../execution/exchange-abstraction';
+import { ExchangeType } from '../execution/exchange-abstraction';
 import { multiExchangeExecutor } from '../execution/multi-exchange-executor';
 import { executionLogger } from '../../utils/logger';
 import type { Position, ScalperConfig } from '../../types';
