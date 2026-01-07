@@ -40,6 +40,12 @@ jest.mock('../../src/config', () => ({
 
 // Mock logger
 jest.mock('../../src/utils/logger', () => ({
+  logger: {
+    debug: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn(),
+  },
   signalLogger: {
     debug: jest.fn(),
     warn: jest.fn(),
@@ -233,7 +239,7 @@ describe('LLM Analyzer', () => {
         expect(result.action).toBe('HOLD');
         expect(result.confidence).toBe(0);
         expect(result.agrees).toBe(false);
-        expect(result.reason).toContain('rate limit');
+        expect(result.reason.toLowerCase()).toContain('rate limit');
       });
     });
 
