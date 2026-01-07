@@ -207,21 +207,8 @@ describe('Signal Scoring', () => {
       expect(hasMACDReason).toBe(true);
     });
 
-    test('should include Stochastic in reasons when oversold', () => {
-      const klines = generateKlines();
-      const score = calculateSignalScore(bullishIndicators, klines, defaultConfig);
-
-      const hasStochReason = score.reasons.some(r => r.toLowerCase().includes('stoch'));
-      expect(hasStochReason).toBe(true);
-    });
-
-    test('should include Williams %R in reasons when oversold', () => {
-      const klines = generateKlines();
-      const score = calculateSignalScore(bullishIndicators, klines, defaultConfig);
-
-      const hasWilliamsReason = score.reasons.some(r => r.toLowerCase().includes('williams'));
-      expect(hasWilliamsReason).toBe(true);
-    });
+    // Note: Stochastic and Williams %R are no longer scored directly as they were
+    // removed to avoid conflicts with RSI. They are still used for bounce detection.
 
     test('should include volume spike in reasons', () => {
       const klines = generateKlines();
@@ -279,16 +266,16 @@ describe('Signal Validation', () => {
       expect(validation.reasons.some(r => r.toLowerCase().includes('volume'))).toBe(true);
     });
 
-    test('should reject signal with momentum out of range', () => {
+    test('should reject signal with momentum too high (chasing)', () => {
       const klines = generateKlines();
-      const lowMomentumIndicators: TechnicalIndicators = {
+      const highMomentumIndicators: TechnicalIndicators = {
         ...bullishIndicators,
-        momentum: 0.05, // Below 0.2 threshold
+        momentum: 3.5, // Above maxMomentum threshold (3.0)
         volumeRatio: 0.5, // Valid volume
       };
 
-      const score = calculateSignalScore(lowMomentumIndicators, klines, defaultConfig);
-      const validation = validateSignal(score, lowMomentumIndicators, defaultConfig);
+      const score = calculateSignalScore(highMomentumIndicators, klines, defaultConfig);
+      const validation = validateSignal(score, highMomentumIndicators, defaultConfig);
 
       expect(validation.isValid).toBe(false);
       expect(validation.reasons.some(r => r.toLowerCase().includes('momentum'))).toBe(true);
@@ -304,17 +291,19 @@ describe('Signal Validation', () => {
         momentum: -0.5,
       };
 
-      // Force a SHORT score
+      // Force a SHORT score with low confidence
       const score: SignalScore = {
         direction: 'SHORT',
         longScore: 20,
         shortScore: 60,
         totalScore: 60,
-        confidence: 40,
+        confidence: 40, // Low confidence (< 60)
         reasons: ['MACD bearish cross'],
       };
 
-      const validation = validateSignal(score, uptrend, defaultConfig);
+      // Enable trend alignment requirement for this test
+      const strictConfig = { ...defaultConfig, requireTrendAlignment: true };
+      const validation = validateSignal(score, uptrend, strictConfig);
 
       expect(validation.isValid).toBe(false);
       expect(validation.reasons.some(r => r.toLowerCase().includes('counter-trend'))).toBe(true);
@@ -380,17 +369,8 @@ describe('Edge Cases', () => {
     expect(score.reasons.some(r => r.toLowerCase().includes('rsi'))).toBe(true);
   });
 
-  test('should handle extreme Stochastic values', () => {
-    const klines = generateKlines();
-    const extremeStoch: TechnicalIndicators = {
-      ...neutralIndicators,
-      stochK: 2,
-      stochD: 5,
-    };
-
-    const score = calculateSignalScore(extremeStoch, klines, defaultConfig);
-    expect(score.reasons.some(r => r.toLowerCase().includes('stoch'))).toBe(true);
-  });
+  // Note: Stochastic extreme values test removed - Stochastic is no longer
+  // scored directly (only used for bounce detection)
 
   test('should handle zero volume ratio', () => {
     const klines = generateKlines();
@@ -436,7 +416,9 @@ describe('Edge Cases', () => {
     const score = calculateSignalScore(allBullish, klines, defaultConfig);
 
     expect(score.direction).toBe('LONG');
-    expect(score.longScore).toBeGreaterThan(80);
-    expect(score.reasons.length).toBeGreaterThan(5);
+    // Adjusted expectation: With only core indicators (EMA, MACD, RSI, Volume),
+    // the score is lower than when Stochastic/Williams/BB were also scored
+    expect(score.longScore).toBeGreaterThan(60);
+    expect(score.reasons.length).toBeGreaterThan(3);
   });
 });
