@@ -18,7 +18,7 @@ module.exports = {
     '^@types/(.*)$': '<rootDir>/src/types/$1',
   },
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: {
         target: 'ES2022',
         module: 'commonjs',
@@ -26,10 +26,20 @@ module.exports = {
         skipLibCheck: true,
         strict: true,
         resolveJsonModule: true,
+        allowJs: true,
+      },
+    }],
+    '^.+\\.(js|jsx)$': ['ts-jest', {
+      tsconfig: {
+        target: 'ES2022',
+        module: 'commonjs',
+        esModuleInterop: true,
+        skipLibCheck: true,
+        allowJs: true,
       },
     }],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@paradex)/)',
+    'node_modules/(?!(@paradex|@polymarket)/)',
   ],
 };

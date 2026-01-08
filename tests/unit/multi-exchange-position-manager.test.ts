@@ -3,6 +3,14 @@
  * Tests for risk management functions across multiple exchanges
  */
 
+// Mock the multi-exchange executor before importing the position manager
+jest.mock('../../src/services/execution/multi-exchange-executor', () => ({
+  multiExchangeExecutor: {
+    getTotalBalance: jest.fn().mockResolvedValue({ balance: 10000, currency: 'USD' }),
+    initialize: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import {
   MultiExchangePositionManager,
   UnifiedPosition,
